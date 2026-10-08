@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#f7f5f0">
+    <meta name="description" content="Organize cifras e letras de músicas nos seus pockets.">
+    <title>Cifra Pocket Club</title>
+    <link rel="stylesheet" href="./styles.css">
+    <script src="./app.js" defer></script>
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="topbar">
+        <a class="brand" href="./" aria-label="Cifra Pocket Club — início">
+          <span class="brand-mark" aria-hidden="true">♪</span>
+          <span>Cifra Pocket <strong>Club</strong></span>
+        </a>
+        <span class="topbar-note">Suas músicas, sempre à mão</span>
+      </header>
+
+      <section class="pockets-panel" aria-labelledby="page-title">
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">Sua coleção</p>
+            <h1 id="page-title">Pockets</h1>
+            <p class="panel-description">Agrupamentos para cada momento.</p>
+          </div>
+          <button class="add-button" id="add-pocket" type="button" aria-label="Adicionar pocket" disabled>
+            <span aria-hidden="true">+</span>
+            <span class="add-button-label">Novo pocket</span>
+          </button>
+        </div>
+
+        <p class="status-message" id="status-message" role="status" aria-live="polite">Carregando seus pockets…</p>
+        <ul class="pocket-list" id="pocket-list" aria-label="Lista de pockets"></ul>
+      </section>
+      <section class="songs-panel" id="songs-panel" aria-labelledby="songs-title" hidden>
+        <button class="back-button" id="back-to-pockets" type="button">
+          <span aria-hidden="true">←</span>
+          <span>Todos os pockets</span>
+        </button>
+        <div class="songs-heading">
+          <div>
+            <p class="eyebrow">Seu repertório</p>
+            <h1 id="songs-title"></h1>
+            <p class="panel-description">Músicas deste pocket.</p>
+          </div>
+          <span class="song-count" id="song-count"></span>
+        </div>
+        <p class="status-message" id="songs-status" role="status" aria-live="polite"></p>
+        <ul class="song-list" id="song-list" aria-label="Músicas do pocket"></ul>
+        <button class="add-song-button" id="add-song" type="button" aria-label="Adicionar música">
+          <span aria-hidden="true">+</span>
+          <span>Adicionar música</span>
+        </button>
+      </section>
+      <section class="song-detail-panel" id="song-detail-panel" aria-labelledby="song-detail-title" hidden>
+        <button class="back-button" id="back-to-songs" type="button">
+          <span aria-hidden="true">←</span>
+          <span id="back-to-songs-label">Voltar às músicas</span>
+        </button>
+        <div class="detail-heading">
+          <div>
+            <p class="eyebrow">Cifra e letra</p>
+            <h1 id="song-detail-title"></h1>
+          </div>
+          <span class="song-key" id="detail-song-key"></span>
+        </div>
+        <p class="status-message" id="detail-status" role="status" aria-live="polite"></p>
+        <article class="lyrics-card" aria-label="Letra e cifra da música">
+          <div class="lyrics-content" id="lyrics-content"></div>
+        </article>
+      </section>
+      <footer class="app-footer">Feito para acompanhar o seu som.</footer>
+    </main>
+
+    <dialog class="pocket-dialog" id="pocket-dialog" aria-labelledby="dialog-title">
+      <form id="pocket-form">
+        <div class="dialog-heading">
+          <div>
+            <p class="eyebrow">Nova coleção</p>
+            <h2 id="dialog-title">Criar pocket</h2>
+          </div>
+          <button class="close-button" id="close-dialog" type="button" aria-label="Fechar">×</button>
+        </div>
+        <label for="pocket-name">Nome do pocket</label>
+        <input id="pocket-name" name="nome" type="text" maxlength="80" placeholder="Ex.: Casamento sábado" required>
+        <p class="form-error" id="form-error" role="alert"></p>
+        <div class="dialog-actions">
+          <button class="secondary-button" id="cancel-dialog" type="button">Cancelar</button>
+          <button class="primary-button" id="save-pocket" type="submit">Criar pocket</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog class="song-dialog" id="song-dialog" aria-labelledby="song-dialog-title">
+      <form id="song-form" novalidate>
+        <div class="dialog-heading">
+          <div>
+            <p class="eyebrow">Novo repertório</p>
+            <h2 id="song-dialog-title">Adicionar música</h2>
+          </div>
+          <button class="close-button" id="close-song-dialog" type="button" aria-label="Fechar">×</button>
+        </div>
+        <label for="song-name-input">Título da música</label>
+        <input id="song-name-input" name="nome" type="text" maxlength="120" placeholder="Ex.: Quero estar com você">
+        <div class="song-form-row">
+          <div>
+            <label for="song-key-input">Tom</label>
+            <input id="song-key-input" name="tom" type="text" maxlength="20" placeholder="Ex.: A">
+          </div>
+        </div>
+        <label for="song-chart-input">Cifra e letra</label>
+        <textarea id="song-chart-input" name="cifra" rows="12" placeholder="Cole a cifra e a letra aqui. Use acordes entre **, por exemplo: **A**    Quero estar com você"></textarea>
+        <p class="song-form-help">Acordes entre ** serão posicionados sobre a letra. Linhas de título e introdução serão ignoradas.</p>
+        <p class="form-error" id="song-form-error" role="alert"></p>
+        <div class="dialog-actions">
+          <button class="secondary-button" id="cancel-song-dialog" type="button">Cancelar</button>
+          <button class="primary-button" id="save-song" type="submit">Salvar música</button>
+        </div>
+      </form>
+    </dialog>
+
+    <div class="snackbar" id="snackbar" role="status" aria-live="polite"></div>
+  </body>
+</html>
