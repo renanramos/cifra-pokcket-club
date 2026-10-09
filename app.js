@@ -35,11 +35,21 @@
   const songFormError = document.querySelector("#song-form-error");
   const saveSongButton = document.querySelector("#save-song");
   const snackbar = document.querySelector("#snackbar");
+  const deleteSongDialog = document.querySelector("#delete-song-dialog");
+  const deleteSongMessage = document.querySelector("#delete-song-message");
+  const deleteSongError = document.querySelector("#delete-song-error");
+  const confirmDeleteSongButton = document.querySelector("#confirm-delete-song");
+  const deleteSongTitle = document.querySelector("#delete-song-title");
+  const deleteSongEyebrow = deleteSongDialog.querySelector(".eyebrow");
+  const cancelDeleteSongButton = document.querySelector("#cancel-delete-song");
 
   let database;
   let pockets = [];
   let routeVersion = 0;
   let snackbarTimeout;
+  let pendingDeletion = null;
+  let deleteDialogReturnFocus = null;
+  let deletionInProgress = false;
 
   function openDatabase() {
     return new Promise((resolve, reject) => {
@@ -130,6 +140,38 @@
     });
   }
 
+  function deleteSong(songId) {
+    return new Promise((resolve, reject) => {
+      const transaction = database.transaction(SONG_STORE, "readwrite");
+      transaction.objectStore(SONG_STORE).delete(songId);
+
+      transaction.oncomplete = resolve;
+      transaction.onerror = () => reject(transaction.error || new Error("Não foi possível excluir a música."));
+      transaction.onabort = () => reject(transaction.error || new Error("A exclusão da música foi interrompida."));
+    });
+  }
+
+  function deletePocketAndSongs(pocketId) {
+    return new Promise((resolve, reject) => {
+      const transaction = database.transaction([POCKET_STORE, SONG_STORE], "readwrite");
+      const songs = transaction.objectStore(SONG_STORE);
+      const request = songs.index("pocketId").openKeyCursor(IDBKeyRange.only(pocketId));
+
+      request.onsuccess = () => {
+        const cursor = request.result;
+        if (!cursor) return;
+        songs.delete(cursor.primaryKey);
+        cursor.continue();
+      };
+
+      transaction.objectStore(POCKET_STORE).delete(pocketId);
+      transaction.oncomplete = resolve;
+      transaction.onerror = () => reject(transaction.error || new Error("Não foi possível excluir o pocket."));
+      transaction.onabort = () => reject(transaction.error || new Error("A exclusão do pocket foi interrompida."));
+      request.onerror = () => reject(request.error || new Error("Não foi possível remover as músicas do pocket."));
+    });
+  }
+
   function createUuid() {
     if (crypto.randomUUID) {
       return crypto.randomUUID();
@@ -190,12 +232,20 @@
       link.textContent = pocket.nome;
       link.setAttribute("aria-label", `Ver músicas do pocket ${pocket.nome}`);
 
+      const deleteButton = document.createElement("button");
+      deleteButton.className = "delete-pocket-button";
+      deleteButton.type = "button";
+      deleteButton.setAttribute("aria-label", `Excluir pocket ${pocket.nome}`);
+      deleteButton.title = "Excluir pocket";
+      deleteButton.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M10 11v6m4-6v6M5 7l1 13h12l1-13M9 7V4h6v3"/></svg>';
+      deleteButton.addEventListener("click", () => openDeleteConfirmation("pocket", pocket, deleteButton));
+
       const arrow = document.createElement("span");
       arrow.className = "pocket-arrow";
       arrow.setAttribute("aria-hidden", "true");
       arrow.textContent = "›";
 
-      item.append(number, link, arrow);
+      item.append(number, link, arrow, deleteButton);
       list.append(item);
     });
   }
@@ -426,12 +476,84 @@
 
       const key = document.createElement("span");
       key.className = "song-key";
-      key.textContent = song.tom || "Não informado";
-      key.setAttribute("aria-label", `Tom: ${key.textContent}`);
+      key.setAttribute("aria-label", `Tom: ${song.tom || "Não informado"}`);
 
-      item.append(number, name, key);
+      const keyLabel = document.createElement("span");
+      keyLabel.className = "song-key-label";
+      keyLabel.textContent = "Tom";
+
+      const keyValue = document.createElement("span");
+      keyValue.className = "song-key-value";
+      keyValue.textContent = song.tom || "Não informado";
+      key.append(keyLabel, keyValue);
+
+      const deleteButton = document.createElement("button");
+      deleteButton.className = "delete-song-button";
+      deleteButton.type = "button";
+      deleteButton.setAttribute("aria-label", `Excluir música ${song.nome}`);
+      deleteButton.title = "Excluir música";
+      deleteButton.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M10 11v6m4-6v6M5 7l1 13h12l1-13M9 7V4h6v3"/></svg>';
+      deleteButton.addEventListener("click", () => openDeleteConfirmation("song", song, deleteButton));
+
+      item.append(number, name, key, deleteButton);
       songList.append(item);
     });
+  }
+
+  function openDeleteConfirmation(type, item, returnFocus) {
+    pendingDeletion = { type, id: item.id, name: item.nome };
+    deleteDialogReturnFocus = returnFocus;
+    deleteSongTitle.textContent = type === "pocket" ? "Excluir pocket?" : "Excluir música?";
+    deleteSongEyebrow.textContent = type === "pocket" ? "Remover pocket" : "Remover do pocket";
+    deleteSongError.textContent = "";
+    deleteSongMessage.textContent = type === "pocket"
+      ? "Todas as músicas do seu pocket serão removidos permanentemente. Deseja excluir?"
+      : "A música do seu pocket será removida permanentemente. Deseja excluir?";
+    deleteSongDialog.showModal();
+    cancelDeleteSongButton.focus();
+  }
+
+  function closeDeleteSongDialog() {
+    if (deleteSongDialog.open) deleteSongDialog.close();
+    pendingDeletion = null;
+    if (deleteDialogReturnFocus?.isConnected) {
+      deleteDialogReturnFocus.focus();
+    }
+    deleteDialogReturnFocus = null;
+  }
+
+  async function confirmDeletion() {
+    if (!pendingDeletion || deletionInProgress) return;
+
+    deletionInProgress = true;
+    confirmDeleteSongButton.disabled = true;
+    cancelDeleteSongButton.disabled = true;
+    deleteSongError.textContent = "";
+    try {
+      const { type, id, name } = pendingDeletion;
+      if (type === "pocket") {
+        await deletePocketAndSongs(id);
+      } else {
+        await deleteSong(id);
+      }
+      closeDeleteSongDialog();
+      if (type === "pocket") {
+        await refreshPockets();
+        addButton.focus();
+        showSnackbar(`“${name}” e suas músicas foram excluídos.`);
+      } else {
+        await renderRoute();
+        showSnackbar(`“${name}” foi excluída do pocket.`);
+      }
+    } catch (error) {
+      const message = error.message || "Não foi possível excluir a música. Tente novamente.";
+      deleteSongError.textContent = message;
+      showSnackbar(message, true);
+    } finally {
+      deletionInProgress = false;
+      confirmDeleteSongButton.disabled = false;
+      cancelDeleteSongButton.disabled = false;
+    }
   }
 
   function parseSections(value) {
@@ -469,8 +591,18 @@
 
   function renderSongDetail(song, pocket) {
     songDetailTitle.textContent = song.nome;
-    detailSongKey.textContent = song.tom || "Não informado";
-    detailSongKey.setAttribute("aria-label", `Tom: ${detailSongKey.textContent}`);
+    const songKey = song.tom || "Não informado";
+    detailSongKey.setAttribute("aria-label", `Tom: ${songKey}`);
+    detailSongKey.replaceChildren();
+
+    const keyLabel = document.createElement("span");
+    keyLabel.className = "song-key-label";
+    keyLabel.textContent = "Tom";
+
+    const keyValue = document.createElement("span");
+    keyValue.className = "song-key-value";
+    keyValue.textContent = songKey;
+    detailSongKey.append(keyLabel, keyValue);
     backToSongsLabel.textContent = `Músicas de ${pocket.nome}`;
     lyricsContent.replaceChildren();
     setDetailStatus("");
@@ -644,6 +776,16 @@
 
   songDialog.addEventListener("click", (event) => {
     if (event.target === songDialog) closeSongDialog();
+  });
+
+  cancelDeleteSongButton.addEventListener("click", closeDeleteSongDialog);
+  confirmDeleteSongButton.addEventListener("click", confirmDeletion);
+  deleteSongDialog.addEventListener("click", (event) => {
+    if (event.target === deleteSongDialog && !deletionInProgress) closeDeleteSongDialog();
+  });
+  deleteSongDialog.addEventListener("cancel", (event) => {
+    event.preventDefault();
+    if (!deletionInProgress) closeDeleteSongDialog();
   });
 
   songForm.addEventListener("submit", async (event) => {

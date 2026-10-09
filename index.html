@@ -122,6 +122,21 @@
       </form>
     </dialog>
 
+    <dialog class="confirm-dialog" id="delete-song-dialog" aria-labelledby="delete-song-title">
+      <div class="dialog-heading">
+        <div>
+          <p class="eyebrow">Remover do pocket</p>
+          <h2 id="delete-song-title">Excluir música?</h2>
+        </div>
+      </div>
+      <p class="confirmation-message" id="delete-song-message"></p>
+      <p class="form-error" id="delete-song-error" role="alert"></p>
+      <div class="dialog-actions">
+        <button class="secondary-button" id="cancel-delete-song" type="button">Cancelar</button>
+        <button class="danger-button" id="confirm-delete-song" type="button">Ok</button>
+      </div>
+    </dialog>
+
     <div class="snackbar" id="snackbar" role="status" aria-live="polite"></div>
   </body>
 </html>

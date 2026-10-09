@@ -21,7 +21,6 @@
 }
 
 body {
-  min-width: 320px;
   min-height: 100vh;
   margin: 0;
   background:
@@ -301,6 +300,8 @@ h1 {
 .close-button:focus-visible,
 .pocket-link:focus-visible,
 .song-link:focus-visible,
+.delete-song-button:focus-visible,
+.delete-pocket-button:focus-visible,
 input:focus-visible,
 textarea:focus-visible {
   outline: 3px solid #9ebaa9;
@@ -388,15 +389,64 @@ textarea:focus-visible {
 }
 
 .song-key {
-  min-width: 44px;
-  padding: 8px 11px;
+  min-width: 68px;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 6px 9px;
   border: 1px solid #e2e8df;
   border-radius: 10px;
   color: var(--green);
   background: #f3f6f0;
+  line-height: 1.15;
+  text-align: center;
+}
+
+.song-key-label {
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.song-key-value {
   font-size: 14px;
   font-weight: 700;
-  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.delete-song-button,
+.delete-pocket-button {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #f0d9d5;
+  border-radius: 11px;
+  color: #922f28;
+  background: #fff8f6;
+  transition: background 160ms ease, border-color 160ms ease;
+}
+
+.delete-song-button:hover,
+.delete-pocket-button:hover {
+  border-color: #d6a49d;
+  background: #ffefec;
+}
+
+.delete-song-button svg,
+.delete-pocket-button svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.7;
 }
 
 .pocket-item {
@@ -503,6 +553,56 @@ textarea:focus-visible {
   color: var(--ink);
   background: var(--paper);
   box-shadow: 0 22px 80px rgb(28 34 26 / 18%);
+}
+
+.confirm-dialog {
+  width: min(100% - 32px, 440px);
+  padding: 28px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  color: var(--ink);
+  background: var(--paper);
+  box-shadow: 0 22px 80px rgb(28 34 26 / 18%);
+}
+
+.confirm-dialog::backdrop {
+  background: rgb(28 34 26 / 48%);
+  backdrop-filter: blur(3px);
+}
+
+.confirm-dialog .dialog-heading {
+  margin-bottom: 15px;
+}
+
+.confirmation-message {
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.danger-button {
+  min-height: 46px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 12px;
+  color: #fff;
+  background: #922f28;
+  font-weight: 600;
+}
+
+.danger-button:hover {
+  background: #76251f;
+}
+
+.danger-button:focus-visible {
+  outline: 3px solid #d99e97;
+  outline-offset: 3px;
+}
+
+.danger-button:disabled {
+  cursor: wait;
+  opacity: 0.7;
 }
 
 .song-dialog::backdrop {
@@ -758,8 +858,8 @@ textarea:focus-visible {
 
   .song-item {
     min-height: 68px;
-    gap: 13px;
-    padding: 11px 13px;
+    gap: 9px;
+    padding: 11px 10px;
   }
 
   .song-name {
@@ -767,9 +867,19 @@ textarea:focus-visible {
   }
 
   .song-key {
-    min-width: 40px;
-    padding: 7px 9px;
+    min-width: 58px;
+    padding: 6px;
+  }
+
+  .song-key-value {
     font-size: 13px;
+  }
+
+  .delete-song-button,
+  .delete-pocket-button {
+    width: 36px;
+    height: 36px;
+    flex-basis: 36px;
   }
 
   .panel-heading {
@@ -820,6 +930,14 @@ textarea:focus-visible {
     max-height: 94vh;
     margin: auto 0 0;
     padding: 23px 20px calc(18px + env(safe-area-inset-bottom));
+    border-radius: 20px 20px 0 0;
+  }
+
+  .confirm-dialog {
+    width: 100%;
+    max-width: none;
+    margin: auto 0 0;
+    padding: 24px 20px calc(20px + env(safe-area-inset-bottom));
     border-radius: 20px 20px 0 0;
   }
 
